@@ -36,12 +36,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Debug event context
+        shell: bash
         run: |
-          echo "event_name=${GITHUB_EVENT_NAME}" 
-          echo "github.ref=${GITHUB_REF}" 
-          echo "github.ref_name=${GITHUB_REF_NAME}" 
-          echo "github.sha=${GITHUB_SHA}" 
-          echo "tag? $(if [[ $GITHUB_REF == refs/tags/* ]]; then echo yes; else echo no; fi)"
+          echo "event_name=${GITHUB_EVENT_NAME}"
+          echo "github.ref=${GITHUB_REF}"
+          echo "github.ref_name=${GITHUB_REF_NAME}"
+          echo "github.sha=${GITHUB_SHA}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then echo "is_tag=yes"; else echo "is_tag=no"; fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -52,6 +53,7 @@ jobs:
         uses: astral-sh/setup-uv@v3
 
       - name: Install dependencies
+        shell: bash
         run: |
           uv sync
           uv tool install pyinstaller
