@@ -3,6 +3,7 @@ name = "lookup-cli"
 version = "0.1.0"
 description = "A command-line translation tool with AI support"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.13"
 dependencies = [
     "click>=8.0.0",
