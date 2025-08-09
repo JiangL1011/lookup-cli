@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           uv sync
-          uv tool install pyinstaller
+          uv add --dev pyinstaller
 
       - name: Build binary
         shell: bash
@@ -68,22 +68,9 @@ jobs:
             APP_NAME=lu.exe
           fi
           
-          # Build using pyinstaller with explicit hidden imports
-          uv run pyinstaller --onefile \
-            --name "${APP_NAME%.*}" \
-            --hidden-import=click \
-            --hidden-import=httpx \
-            --hidden-import=pyyaml \
-            --hidden-import=rich \
-            --hidden-import=langdetect \
-            --hidden-import=dashscope \
-            --hidden-import=openai \
-            --hidden-import=app.cli \
-            --hidden-import=app.config \
-            --hidden-import=app.translator \
-            --hidden-import=app.i18n \
-            --hidden-import=pkg_resources.py2_warn \
-            main.py
+          # Build using pyinstaller from project environment
+          # Keep --onefile for easy distribution, even though it's slower to start
+          uv run pyinstaller --onefile --name "${APP_NAME%.*}" main.py
 
       - name: Smoke test binary (--help)
         shell: bash

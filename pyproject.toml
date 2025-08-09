@@ -21,3 +21,8 @@ lu = "main:main"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.15.0",
+]
