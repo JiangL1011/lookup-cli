@@ -73,9 +73,14 @@ jobs:
         shell: bash
         run: |
           set -e
+          # Check if binary exists and is executable
           if [[ "${{ matrix.target }}" == "windows" ]]; then
+            ls -la dist/lu.exe || { echo 'Binary not found'; exit 1; }
+            chmod +x dist/lu.exe || true
             ./dist/lu.exe --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
           else
+            ls -la dist/lu || { echo 'Binary not found'; exit 1; }
+            chmod +x dist/lu || true
             ./dist/lu --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
           fi
           echo "Smoke test passed"
