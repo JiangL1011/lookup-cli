@@ -1,10 +1,24 @@
 import sys
+import os
 import click
 from app.cli import cli
 
 
 def main():
     """Main entry point that handles subcommand routing."""
+    # 设置Windows控制台编码支持
+    if sys.platform == "win32":
+        # 尝试设置控制台为UTF-8模式
+        try:
+            import codecs
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8')
+            if hasattr(sys.stderr, 'reconfigure'):
+                sys.stderr.reconfigure(encoding='utf-8')
+        except Exception:
+            # 如果重配置失败，设置环境变量
+            os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
+    
     # 检查第一个参数是否是子命令
     if len(sys.argv) > 1:
         first_arg = sys.argv[1]

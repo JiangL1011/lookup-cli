@@ -80,11 +80,13 @@ jobs:
           if [[ "${{ matrix.target }}" == "windows" ]]; then
             ls -la dist/lu.exe
             echo "Testing with --help:"
+            # Set UTF-8 encoding for Windows
+            export PYTHONIOENCODING=utf-8
             ./dist/lu.exe --help 2>&1 || { 
-              echo "Failed with --help, trying with no args:"
-              ./dist/lu.exe 2>&1 || {
-                echo "Failed with no args, trying simple execution:"
-                ./dist/lu.exe --version 2>&1 || true
+              echo "Failed with --help, trying with --support:"
+              ./dist/lu.exe --support 2>&1 || {
+                echo "Failed with --support, trying simple execution:"
+                echo "test" | ./dist/lu.exe 2>&1 || true
                 exit 1
               }
             }
@@ -92,10 +94,10 @@ jobs:
             ls -la dist/lu
             echo "Testing with --help:"
             ./dist/lu --help 2>&1 || { 
-              echo "Failed with --help, trying with no args:"
-              ./dist/lu 2>&1 || {
-                echo "Failed with no args, trying simple execution:"
-                ./dist/lu --version 2>&1 || true
+              echo "Failed with --help, trying with --support:"
+              ./dist/lu --support 2>&1 || {
+                echo "Failed with --support, trying simple execution:"
+                echo "test" | ./dist/lu 2>&1 || true
                 exit 1
               }
             }

@@ -63,7 +63,7 @@ def validate_language(lang_code, i18n=None):
 @click.argument('text', nargs=-1)
 @click.pass_context
 def cli(ctx, target, support, text):
-    """🔍 Lu - A powerful command-line translation tool with AI support."""
+    """Lu - A powerful command-line translation tool with AI support."""
     
     # 显示支持的语言
     if support:
