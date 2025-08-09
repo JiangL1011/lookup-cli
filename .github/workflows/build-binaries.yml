@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Debug event context
         shell: bash
@@ -95,9 +97,40 @@ jobs:
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
       (github.event_name == 'workflow_dispatch' && inputs.version != '')
     steps:
-      - name: Extract tag name
+      - name: Extract or set tag name
         id: tag
-        run: echo "tag_name=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ -z "${{ inputs.version }}" ]]; then
+              echo "workflow_dispatch requires inputs.version" >&2; exit 1; fi
+            VERSION='${{ inputs.version }}'
+            if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid version format: $VERSION" >&2; exit 1; fi
+            echo "Using manual version: $VERSION"
+            echo "tag_name=$VERSION" >> $GITHUB_OUTPUT
+          else
+            REF_TAG="${GITHUB_REF##*/}"
+            echo "Detected tag from ref: $REF_TAG"
+            echo "tag_name=$REF_TAG" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ensure tag exists (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          set -e
+            VERSION='${{ inputs.version }}'
+            git fetch --tags --quiet
+            if git rev-parse "$VERSION" >/dev/null 2>&1; then
+              echo "Tag $VERSION already exists (remote or local)."
+            else
+              git config user.name "github-actions"
+              git config user.email "actions@github.com"
+              git tag -a "$VERSION" -m "Release $VERSION"
+              git push origin "$VERSION"
+              echo "Created and pushed tag $VERSION"
+            fi
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -126,14 +159,16 @@ jobs:
           test -f artifacts/lu-windows/lu-windows.exe || { echo 'missing windows binary'; exit 1; }
           echo "All expected assets present."
 
-      - name: Create GitHub Release
+      - name: Create / Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag_name }}
-          name: lookup-cli ${{ steps.tag.outputs.tag_name }}
+          name: ${{ steps.tag.outputs.tag_name }}
           draft: false
           prerelease: false
           generate_release_notes: true
+          overwrite: true
+          fail_on_unmatched_files: true
           files: |
             artifacts/*/*
             artifacts/*/*.sha256
