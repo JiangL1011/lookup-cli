@@ -12,35 +12,94 @@
 - 🎨 **美观界面**: Rich终端UI，表情符号和颜色提升体验
 - ⚙️ **智能配置**: 交互式配置向导，支持配置覆盖保护
 
-## 🚀 快速开始
+## 🚀 安装与升级
 
-### 1. 安装依赖
+无需克隆仓库，直接下载安装脚本即可获取已构建好的二进制文件。
+
+### macOS / Linux 一键安装（最新版本）
 ```bash
-git clone <your-repo>
+curl -LsSf https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/install.sh | sh
+```
+
+### Windows PowerShell 一键安装（最新版本）
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/install.ps1 | iex"
+```
+
+### 指定版本安装（示例 v0.1.0）
+macOS / Linux：
+```bash
+curl -LsSf https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/install.sh | LU_VERSION=v0.1.0 sh
+```
+Windows：
+```powershell
+powershell -ExecutionPolicy ByPass -c "$env:LU_VERSION='v0.1.0'; irm https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/install.ps1 | iex"
+```
+
+### 升级
+直接重复执行安装命令即可（脚本会自动检测并覆盖原有版本）。
+
+### 卸载
+macOS / Linux：
+```bash
+curl -LsSf https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/uninstall.sh | sh
+```
+静默卸载（跳过确认）：
+```bash
+curl -LsSf https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/uninstall.sh | FORCE=1 sh
+```
+Windows：
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/uninstall.ps1 | iex"
+```
+
+### 验证安装
+```bash
+lu --help
+lu trans hello world
+```
+
+### 自定义安装目录
+```bash
+PREFIX=$HOME/.local curl -LsSf https://raw.githubusercontent.com/JiangL1011/lookup-cli/main/scripts/install.sh | sh
+```
+确保将 $HOME/.local/bin 加入 PATH。
+
+### 手动（开发者）安装
+```bash
+git clone https://github.com/JiangL1011/lookup-cli.git
 cd lookup-cli
-uv sync
+uv sync  # 或 pip install -e .
+python main.py --help
 ```
 
-### 2. 初始化配置
+---
+
+## 🏁 初始化配置
+首次运行建议执行：
 ```bash
-./lu init
+lu init
 ```
-
 交互式配置向导将帮您设置：
-- **主语言选择**: 中文或英文界面
-- **AI供应商**: OpenAI / DashScope / 自定义API
-- **模型选择**: 根据供应商选择合适的模型
-- **API配置**: 安全的API密钥设置
+* 主语言
+* AI 供应商 (openai / dashscope / custom)
+* 模型名称
+* API Key / Base URL
 
-### 3. 开始翻译
+配置文件位置： `~/.lu/config.yaml`
+
+---
+
+## 🔰 使用快速示例
+
 ```bash
-# 智能翻译（自动检测语言）
-./lu hello
-./lu "good morning"
+# 自动检测语言
+lu hello
+lu "good morning"
 
 # 指定目标语言
-./lu -t ja "Hello world"
-./lu --target zh-cn "Beautiful day"
+lu -t ja "Hello world"
+lu --target zh-cn "Beautiful day"
 ```
 
 ## 🎯 使用方法
@@ -48,43 +107,43 @@ uv sync
 ### 基本翻译
 ```bash
 # 翻译单词
-./lu apple
-./lu programming
+lu apple
+lu programming
 
 # 翻译短语
-./lu "good morning"
-./lu "artificial intelligence"
+lu "good morning"
+lu "artificial intelligence"
 
 # 翻译句子
-./lu "How are you doing today?"
-./lu "The weather is beautiful."
+lu "How are you doing today?"
+lu "The weather is beautiful."
 ```
 
 ### 使用trans命令（无需引号）
 ```bash
 # 推荐使用trans命令，无需引号
-./lu trans hello world
-./lu trans How are you
-./lu trans The weather is nice today
+lu trans hello world
+lu trans How are you
+lu trans The weather is nice today
 
 # 指定目标语言
-./lu trans -t ja Good morning
-./lu -t zh-cn trans Hello world
+lu trans -t ja Good morning
+lu -t zh-cn trans Hello world
 ```
 
 ### 语言和帮助
 ```bash
 # 查看支持的语言
-./lu -s
-./lu --support
+lu -s
+lu --support
 
 # 查看帮助
-./lu -h
-./lu --help
+lu -h
+lu --help
 
 # 子命令帮助
-./lu init --help
-./lu trans --help
+lu init --help
+lu trans --help
 ```
 
 ## 🌍 支持的语言
@@ -106,12 +165,12 @@ uv sync
 - **主语言输入**: 提供交互式目标语言选择菜单
 - **手动指定**: 使用 `-t/--target` 参数强制指定目标语言
 
-### � 内容分层处理
+### 🌽 内容分层处理
 - **单词翻译**: 提供音标、词性、例句
 - **短语翻译**: 提供语境解释、使用示例
 - **句子翻译**: 提供语法分析、相似表达
 
-### � 多语言界面
+### 🔡 多语言界面
 - 根据配置的主语言自动切换界面语言
 - 所有提示、错误信息、帮助文本均支持双语
 - AI说明内容使用用户的主语言
@@ -144,7 +203,7 @@ models:
 ### 重新配置
 ```bash
 # 重新运行init会显示当前配置并询问是否覆盖
-./lu init
+lu init
 ```
 
 ## 🛠️ 开发信息
@@ -167,11 +226,11 @@ lookup-cli/
 ### 核心命令
 ```bash
 # 查看所有命令
-./lu --help
+lu --help
 
 # 主要子命令
-./lu init                # 初始化配置
-./lu trans [text...]     # 翻译文本（推荐）
+lu init                # 初始化配置
+lu trans [text...]     # 翻译文本（推荐）
 
 # 选项参数  
 -t, --target TEXT        # 指定目标语言
