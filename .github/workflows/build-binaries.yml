@@ -35,6 +35,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Debug event context
+        run: |
+          echo "event_name=${GITHUB_EVENT_NAME}" 
+          echo "github.ref=${GITHUB_REF}" 
+          echo "github.ref_name=${GITHUB_REF_NAME}" 
+          echo "github.sha=${GITHUB_SHA}" 
+          echo "tag? $(if [[ $GITHUB_REF == refs/tags/* ]]; then echo yes; else echo no; fi)"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -81,7 +89,9 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.version != '')
     steps:
       - name: Extract tag name
         id: tag
