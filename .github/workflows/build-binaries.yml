@@ -77,11 +77,21 @@ jobs:
           if [[ "${{ matrix.target }}" == "windows" ]]; then
             ls -la dist/lu.exe || { echo 'Binary not found'; exit 1; }
             chmod +x dist/lu.exe || true
-            ./dist/lu.exe --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
+            echo "Testing Windows binary with --help..."
+            ./dist/lu.exe --help || { 
+              echo 'Binary help command failed, trying without redirection:'
+              ./dist/lu.exe --help
+              exit 1
+            }
           else
             ls -la dist/lu || { echo 'Binary not found'; exit 1; }
             chmod +x dist/lu || true
-            ./dist/lu --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
+            echo "Testing Unix binary with --help..."
+            ./dist/lu --help || { 
+              echo 'Binary help command failed, trying without redirection:'
+              ./dist/lu --help
+              exit 1
+            }
           fi
           echo "Smoke test passed"
 
