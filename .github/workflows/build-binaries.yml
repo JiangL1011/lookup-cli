@@ -67,7 +67,18 @@ jobs:
           if [[ "${{ matrix.target }}" == "windows" ]]; then
             APP_NAME=lu.exe
           fi
-          pyinstaller --onefile --name "$APP_NAME" main.py
+          uv run pyinstaller --onefile --name "$APP_NAME" main.py
+
+      - name: Smoke test binary (--help)
+        shell: bash
+        run: |
+          set -e
+          if [[ "${{ matrix.target }}" == "windows" ]]; then
+            ./dist/lu.exe --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
+          else
+            ./dist/lu --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
+          fi
+          echo "Smoke test passed"
 
       - name: Archive artifact
         if: success()
@@ -159,21 +170,36 @@ jobs:
           test -f artifacts/lu-windows/lu-windows.exe || { echo 'missing windows binary'; exit 1; }
           echo "All expected assets present."
 
-      - name: Create / Update GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag.outputs.tag_name }}
-          name: ${{ steps.tag.outputs.tag_name }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          overwrite: true
-          fail_on_unmatched_files: true
-          files: |
-            artifacts/*/*
-            artifacts/*/*.sha256
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare release assets directory
+        shell: bash
+        run: |
+          mkdir release-assets
+          find artifacts -type f -maxdepth 3 -print
+          cp artifacts/lu-linux/lu-linux release-assets/lu-linux
+          cp artifacts/lu-macos/lu-macos release-assets/lu-macos
+          cp artifacts/lu-windows/lu-windows.exe release-assets/lu-windows.exe
+          cp artifacts/lu-linux/lu-linux.sha256 release-assets/lu-linux.sha256 || true
+          cp artifacts/lu-macos/lu-macos.sha256 release-assets/lu-macos.sha256 || true
+          cp artifacts/lu-windows/lu-windows.exe.sha256 release-assets/lu-windows.exe.sha256 || true
+          ls -l release-assets
 
-      - name: Display release URL
-        run: echo "Release published for ${{ steps.tag.outputs.tag_name }}"
+      - name: Re-create release (idempotent)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG='${{ steps.tag.outputs.tag_name }}'
+          # Delete existing release if present (ignore errors)
+          gh release view "$TAG" >/dev/null 2>&1 && gh release delete "$TAG" -y || true
+          # (Tag already exists from earlier logic; do not delete tag, only release)
+          gh release create "$TAG" release-assets/* \
+            --title "$TAG" \
+            --generate-notes
+          echo "Release URL:" $(gh release view "$TAG" --json url -q .url)
+
+      - name: Display release summary
+        shell: bash
+        run: |
+          echo "Published release for tag ${{ steps.tag.outputs.tag_name }} with assets:" 
+          ls -1 release-assets
