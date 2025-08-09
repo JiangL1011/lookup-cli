@@ -1,7 +1,22 @@
 [project]
 name = "lookup-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "A command-line translation tool with AI support"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "click>=8.0.0",
+    "httpx>=0.25.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+    "langdetect>=1.0.9",
+    "dashscope>=1.14.0",
+    "openai>=1.0.0",
+]
+
+[project.scripts]
+lu = "main:main"
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
