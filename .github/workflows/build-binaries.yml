@@ -67,31 +67,78 @@ jobs:
           if [[ "${{ matrix.target }}" == "windows" ]]; then
             APP_NAME=lu.exe
           fi
-          uv run pyinstaller --onefile --name "$APP_NAME" main.py
+          # Create PyInstaller spec file to ensure all dependencies are included
+          cat > lu.spec << 'EOF'
+          # -*- mode: python ; coding: utf-8 -*-
+
+          block_cipher = None
+
+          a = Analysis(
+              ['main.py'],
+              pathex=[],
+              binaries=[],
+              datas=[],
+              hiddenimports=[
+                  'click',
+                  'httpx',
+                  'pyyaml',
+                  'rich',
+                  'langdetect',
+                  'dashscope',
+                  'openai',
+                  'app.cli',
+                  'app.config',
+                  'app.translator',
+                  'app.i18n',
+              ],
+              hookspath=[],
+              hooksconfig={},
+              runtime_hooks=[],
+              excludes=[],
+              win_no_prefer_redirects=False,
+              win_private_assemblies=False,
+              cipher=block_cipher,
+              noarchive=False,
+          )
+          pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+          exe = EXE(
+              pyz,
+              a.scripts,
+              a.binaries,
+              a.zipfiles,
+              a.datas,
+              [],
+              name='APP_NAME_PLACEHOLDER',
+              debug=False,
+              bootloader_ignore_signals=False,
+              strip=False,
+              upx=True,
+              upx_exclude=[],
+              runtime_tmpdir=None,
+              console=True,
+              disable_windowed_traceback=False,
+              argv_emulation=False,
+              target_arch=None,
+              codesign_identity=None,
+              entitlements_file=None,
+          )
+          EOF
+          
+          # Replace APP_NAME_PLACEHOLDER with actual app name
+          sed -i.bak "s/APP_NAME_PLACEHOLDER/$APP_NAME/g" lu.spec
+          
+          # Build using spec file
+          uv run pyinstaller lu.spec
 
       - name: Smoke test binary (--help)
         shell: bash
         run: |
           set -e
-          # Check if binary exists and is executable
           if [[ "${{ matrix.target }}" == "windows" ]]; then
-            ls -la dist/lu.exe || { echo 'Binary not found'; exit 1; }
-            chmod +x dist/lu.exe || true
-            echo "Testing Windows binary with --help..."
-            ./dist/lu.exe --help || { 
-              echo 'Binary help command failed, trying without redirection:'
-              ./dist/lu.exe --help
-              exit 1
-            }
+            ./dist/lu.exe --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
           else
-            ls -la dist/lu || { echo 'Binary not found'; exit 1; }
-            chmod +x dist/lu || true
-            echo "Testing Unix binary with --help..."
-            ./dist/lu --help || { 
-              echo 'Binary help command failed, trying without redirection:'
-              ./dist/lu --help
-              exit 1
-            }
+            ./dist/lu --help > /dev/null 2>&1 || { echo 'Binary help command failed'; exit 1; }
           fi
           echo "Smoke test passed"
 
