@@ -45,8 +45,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install .
-          uv pip install pyinstaller
+          uv sync
+          uv tool install pyinstaller
 
       - name: Build binary
         shell: bash
