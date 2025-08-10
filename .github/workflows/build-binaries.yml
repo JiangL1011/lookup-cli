@@ -59,10 +59,34 @@ jobs:
         run: |
           uv sync --group dev
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}-ccache
+          max-size: 2G
+
+      - name: Install system dependencies
+        shell: bash
+        run: |
+          if [[ "${{ matrix.target }}" == "linux" ]]; then
+            sudo apt-get update
+            sudo apt-get install -y ccache
+          elif [[ "${{ matrix.target }}" == "macos" ]]; then
+            brew install ccache
+          fi
+
       - name: Build binary using nuitka
         shell: bash
         run: |
           echo "🚀 Starting build process for ${{ matrix.target }}..."
+          
+          # Set environment to optimize build speed
+          export NUITKA_CACHE_DIR="/tmp/nuitka-cache"
+          if command -v ccache &> /dev/null; then
+            export CC="ccache gcc"
+            export CXX="ccache g++"
+            echo "🚀 Using ccache for faster compilation"
+          fi
           
           # Determine output filename based on platform
           if [[ "${{ matrix.target }}" == "windows" ]]; then
@@ -83,13 +107,31 @@ jobs:
           
           # Build using nuitka
           echo "🔨 Building executable with nuitka..."
-          uv run nuitka \
+          echo "⏱️  This may take 5-15 minutes depending on platform..."
+          echo "📊 Using $JOBS parallel jobs"
+          
+          # Set number of parallel jobs based on platform
+          if [[ "${{ matrix.target }}" == "windows" ]]; then
+            JOBS=1  # Windows can be unstable with too many parallel jobs
+            EXTRA_ARGS=""
+          else
+            JOBS=2  # Unix systems can handle more parallel compilation
+            # Try to use static libpython for better performance on Unix
+            EXTRA_ARGS="--static-libpython=auto"
+          fi
+          
+          yes "no" | timeout 1200 uv run nuitka \
             --mode=onefile \
             --output-dir=build \
             --output-filename="$OUTPUT_FILENAME" \
             --include-package=app \
             --include-package-data=langdetect \
-            main.py
+            --jobs="$JOBS" \
+            --lto=no \
+            --enable-plugin=anti-bloat \
+            --show-progress \
+            $EXTRA_ARGS \
+            main.py || true
           
           # Verify build was successful
           EXECUTABLE_PATH="build/$OUTPUT_FILENAME"
