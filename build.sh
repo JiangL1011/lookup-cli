@@ -10,9 +10,17 @@ set -e  # Exit on any error
 
 echo "🚀 Starting build process..."
 
+# Debug: Print environment info
+echo "🔍 Environment check:"
+echo "Shell: $0"
+echo "PATH: $PATH"
+echo "Which uv: $(which uv 2>/dev/null || echo 'not found')"
+
 # Check if uv is available
 if ! command -v uv &> /dev/null; then
     echo "❌ Error: uv is not installed or not in PATH"
+    echo "Available commands in PATH:"
+    echo $PATH | tr ':' '\n' | head -10
     exit 1
 fi
 

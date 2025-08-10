@@ -62,7 +62,54 @@ jobs:
       - name: Build binary using nuitka
         shell: bash
         run: |
-          sh build.sh
+          echo "🚀 Starting build process for ${{ matrix.target }}..."
+          
+          # Determine output filename based on platform
+          if [[ "${{ matrix.target }}" == "windows" ]]; then
+            OUTPUT_FILENAME="lu.exe"
+          else
+            OUTPUT_FILENAME="lu"
+          fi
+          
+          echo "📦 Target platform: ${{ matrix.target }}"
+          echo "📝 Output filename: $OUTPUT_FILENAME"
+          
+          # Clean up any previous build artifacts
+          echo "🧹 Cleaning up previous build artifacts..."
+          rm -rf build main.build main.dist main.onefile-build
+          
+          # Create build directory
+          mkdir -p build
+          
+          # Build using nuitka
+          echo "🔨 Building executable with nuitka..."
+          echo "⏱️  This may take 5-15 minutes depending on platform..."
+
+          echo -e "no\n" | uv run nuitka \
+            --mode=onefile \
+            --output-dir=build \
+            --output-filename="$OUTPUT_FILENAME" \
+            --include-package=app \
+            --include-package-data=langdetect \
+            --assume-yes-for-downloads \
+            main.py
+          
+          # Verify build was successful
+          EXECUTABLE_PATH="build/$OUTPUT_FILENAME"
+          if [[ -f "$EXECUTABLE_PATH" ]]; then
+            echo "✅ Build successful!"
+            echo "📊 Executable size: $(ls -lh "$EXECUTABLE_PATH" | awk '{print $5}')"
+          else
+            echo "❌ Build failed! Executable not found at $EXECUTABLE_PATH"
+            exit 1
+          fi
+          
+          # Clean up temporary build artifacts (keep the executable)
+          echo "🧹 Cleaning up temporary build artifacts..."
+          rm -rf main.build main.dist main.onefile-build 
+          rm -rf build/main.build build/main.dist build/main.onefile-build
+          
+          echo "🎉 Build complete! Output: $EXECUTABLE_PATH"
 
       - name: Smoke test binary
         shell: bash
