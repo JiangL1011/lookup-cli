@@ -108,7 +108,6 @@ jobs:
           # Build using nuitka
           echo "🔨 Building executable with nuitka..."
           echo "⏱️  This may take 5-15 minutes depending on platform..."
-          echo "📊 Using $JOBS parallel jobs"
           
           # Set number of parallel jobs based on platform
           if [[ "${{ matrix.target }}" == "windows" ]]; then
@@ -120,7 +119,10 @@ jobs:
             EXTRA_ARGS="--static-libpython=auto"
           fi
           
-          yes "no" | timeout 1200 uv run nuitka \
+          echo "📊 Using $JOBS parallel jobs"
+          
+          # Execute nuitka build
+          yes "no" | uv run nuitka \
             --mode=onefile \
             --output-dir=build \
             --output-filename="$OUTPUT_FILENAME" \
