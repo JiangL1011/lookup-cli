@@ -29,7 +29,7 @@ mkdir -p build
 
 # Build the executable using nuitka
 echo "🔨 Building executable with nuitka..."
-uv run nuitka \
+echo -e "no\n" | uv run nuitka \
     --mode=onefile \
     --output-dir=build \
     --output-filename=lu \
@@ -48,9 +48,6 @@ else
     exit 1
 fi
 
-# Clean up build artifacts (keep the executable in build/)
-echo "🧹 Cleaning up temporary build artifacts..."
-rm -rf main.build main.dist main.onefile-build build/main.build build/main.dist build/main.onefile-build
 
 echo "🎉 Build complete! The executable 'lu' is ready to use."
 echo "� Output location: build/lu"
