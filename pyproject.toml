@@ -24,5 +24,13 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
-    "pyinstaller>=6.15.0",
+    "nuitka>=2.7.12",
 ]
+
+[tool.nuitka]
+# Nuitka configuration for building executable
+mode = "onefile"
+output-dir = "build"
+output-filename = "lu"
+include-package = ["app"]
+include-package-data = ["langdetect"]

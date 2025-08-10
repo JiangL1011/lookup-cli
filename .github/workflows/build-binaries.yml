@@ -57,71 +57,125 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          uv sync
-          uv add --dev pyinstaller
+          uv sync --group dev
 
-      - name: Build binary
+      - name: Build binary using nuitka
         shell: bash
         run: |
-          APP_NAME=lu
+          echo "🚀 Starting build process for ${{ matrix.target }}..."
+          
+          # Determine output filename based on platform
           if [[ "${{ matrix.target }}" == "windows" ]]; then
-            APP_NAME=lu.exe
+            OUTPUT_FILENAME="lu.exe"
+          else
+            OUTPUT_FILENAME="lu"
           fi
           
-          # Build using pyinstaller from project environment
-          # Keep --onefile for easy distribution, even though it's slower to start
-          uv run pyinstaller --onefile --name "${APP_NAME%.*}" main.py
+          echo "📦 Target platform: ${{ matrix.target }}"
+          echo "📝 Output filename: $OUTPUT_FILENAME"
+          
+          # Clean up any previous build artifacts
+          echo "🧹 Cleaning up previous build artifacts..."
+          rm -rf build main.build main.dist main.onefile-build
+          
+          # Create build directory
+          mkdir -p build
+          
+          # Build using nuitka
+          echo "🔨 Building executable with nuitka..."
+          uv run nuitka \
+            --mode=onefile \
+            --output-dir=build \
+            --output-filename="$OUTPUT_FILENAME" \
+            --include-package=app \
+            --include-package-data=langdetect \
+            main.py
+          
+          # Verify build was successful
+          EXECUTABLE_PATH="build/$OUTPUT_FILENAME"
+          if [[ -f "$EXECUTABLE_PATH" ]]; then
+            echo "✅ Build successful!"
+            echo "📊 Executable size: $(ls -lh "$EXECUTABLE_PATH" | awk '{print $5}')"
+          else
+            echo "❌ Build failed! Executable not found at $EXECUTABLE_PATH"
+            exit 1
+          fi
+          
+          # Clean up temporary build artifacts (keep the executable)
+          echo "🧹 Cleaning up temporary build artifacts..."
+          rm -rf main.build main.dist main.onefile-build 
+          rm -rf build/main.build build/main.dist build/main.onefile-build
+          
+          echo "🎉 Build complete! Output: $EXECUTABLE_PATH"
 
-      - name: Smoke test binary (--help)
+      - name: Smoke test binary
         shell: bash
         run: |
-          set -e
-          echo "Checking if binary exists and testing..."
+          echo "🧪 Testing executable functionality..."
+          
+          # Determine executable path based on platform
           if [[ "${{ matrix.target }}" == "windows" ]]; then
-            ls -la dist/lu.exe
-            echo "Testing with --help:"
+            EXECUTABLE_PATH="build/lu.exe"
+          else
+            EXECUTABLE_PATH="build/lu"
+          fi
+          
+          # Check if executable exists
+          if [[ ! -f "$EXECUTABLE_PATH" ]]; then
+            echo "❌ Executable not found at $EXECUTABLE_PATH"
+            exit 1
+          fi
+          
+          echo "📁 Testing executable: $EXECUTABLE_PATH"
+          
+          # Test with --help
+          echo "Testing with --help..."
+          if [[ "${{ matrix.target }}" == "windows" ]]; then
             # Set UTF-8 encoding for Windows
             export PYTHONIOENCODING=utf-8
-            ./dist/lu.exe --help 2>&1 || { 
-              echo "Failed with --help, trying with --support:"
-              ./dist/lu.exe --support 2>&1 || {
-                echo "Failed with --support, trying simple execution:"
-                echo "test" | ./dist/lu.exe 2>&1 || true
-                exit 1
-              }
-            }
-          else
-            ls -la dist/lu
-            echo "Testing with --help:"
-            ./dist/lu --help 2>&1 || { 
-              echo "Failed with --help, trying with --support:"
-              ./dist/lu --support 2>&1 || {
-                echo "Failed with --support, trying simple execution:"
-                echo "test" | ./dist/lu 2>&1 || true
-                exit 1
-              }
-            }
           fi
-          echo "Smoke test passed"
+          
+          if "$EXECUTABLE_PATH" --help >/dev/null 2>&1; then
+            echo "✅ --help test passed"
+          else
+            echo "⚠️ --help test failed, trying --support..."
+            if "$EXECUTABLE_PATH" --support >/dev/null 2>&1; then
+              echo "✅ --support test passed"
+            else
+              echo "❌ Both --help and --support tests failed"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ Smoke test passed!"
 
       - name: Archive artifact
         if: success()
         shell: bash
         run: |
-          mkdir dist/upload
+          echo "📦 Preparing artifact for upload..."
+          
+          # Create upload directory
+          mkdir -p build/upload
+          
+          # Copy executable to upload directory with platform-specific naming
           if [[ "${{ matrix.target }}" == "windows" ]]; then
-            mv dist/lu.exe dist/upload/lu-${{ matrix.target }}.exe
-          elif [[ "${{ matrix.target }}" == "macos" ]]; then
-            mv dist/lu dist/upload/lu-${{ matrix.target }}
+            cp build/lu.exe build/upload/lu-${{ matrix.target }}.exe
+            echo "📁 Prepared: build/upload/lu-${{ matrix.target }}.exe"
           else
-            mv dist/lu dist/upload/lu-${{ matrix.target }}
+            cp build/lu build/upload/lu-${{ matrix.target }}
+            echo "📁 Prepared: build/upload/lu-${{ matrix.target }}"
           fi
+          
+          # List what's in the upload directory
+          echo "📋 Upload directory contents:"
+          ls -la build/upload/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: lu-${{ matrix.target }}
-          path: dist/upload/*
+          path: build/upload/*
           if-no-files-found: error
 
   release:
